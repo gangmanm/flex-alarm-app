@@ -11,7 +11,7 @@ function App() {
     const handleOnline = () => {
       setIsOnline(true);
       sendNotification(
-        "✅ Wi-Fi 연결됨",
+        "출근 하셨나요? Flex에서 출근을 눌러주세요",
         `${wifiName || "알 수 없음"}에 연결되었습니다.`
       );
     };
@@ -20,7 +20,7 @@ function App() {
       setIsOnline(false);
       const storedWifiName = localStorage.getItem("wifiName") || "알 수 없음";
       sendNotification(
-        "❌ Wi-Fi 연결 끊김",
+        "퇴근 하셨나요? Flex에서 퇴근을 눌러주세요",
         `${storedWifiName}에서 연결이 끊겼습니다.`
       );
     };
@@ -69,7 +69,9 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>{isOnline ? "✅ 온라인 상태" : "❌ 오프라인 상태"}</h1>
+        <h1>
+          {isOnline ? "✅ 온라인 상태 : 출근" : "❌ 오프라인 상태 : 퇴근"}
+        </h1>
         {wifiName && <p>현재 저장된 Wi-Fi: {wifiName}</p>}
         <button onClick={requestNotificationPermission}>
           🔔 알림 권한 요청
