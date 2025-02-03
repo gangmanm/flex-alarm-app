@@ -6,6 +6,79 @@ function App() {
   const [wifiName, setWifiName] = useState<string | null>(
     localStorage.getItem("wifiName")
   );
+  const [currentIP, setCurrentIP] = useState<string>("");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  const fetchCurrentIP = async () => {
+    try {
+      const response = await fetch("https://api64.ipify.org?format=json");
+      const data = await response.json();
+      setCurrentIP(data.ip);
+    } catch (error) {
+      console.error("IP 주소를 가져오는 중 오류 발생:", error);
+    }
+  };
+  useEffect(() => {
+    fetchCurrentIP(); // 초기 IP 확인
+
+    const handleNetworkChange = () => {
+      fetchCurrentIP(); // 네트워크 변경 시 IP 확인
+    };
+
+    window.addEventListener("online", handleNetworkChange);
+    window.addEventListener("offline", handleNetworkChange);
+
+    return () => {
+      window.removeEventListener("online", handleNetworkChange);
+      window.removeEventListener("offline", handleNetworkChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (wifiName && currentIP) {
+      const storedIP = localStorage.getItem("wifiIP");
+
+      if (storedIP && storedIP !== currentIP) {
+        sendNotification(
+          "❌ Wi-Fi 연결 끊김",
+          `${wifiName}에서 연결이 끊겼습니다.`
+        );
+      }
+    }
+  }, [currentIP, wifiName]);
+  // PWA 설치 가능 여부 감지
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("✅ PWA 설치 완료");
+        } else {
+          console.log("❌ PWA 설치 취소");
+        }
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      });
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => {
@@ -72,11 +145,26 @@ function App() {
         <h1>
           {isOnline ? "✅ 온라인 상태 : 출근" : "❌ 오프라인 상태 : 퇴근"}
         </h1>
+        <p>
+          사용방법
+          <br />
+          1. 홈 화면에 추가하기 버튼을 클릭하여 앱을 홈 화면에 추가
+          <br />
+          2. 알림 권한 요청 버튼을 눌러 알림 허용
+          <br />
+          3. 현재 Wi-Fi 저장 버튼을 눌러 모빈 Wi-Fi 저장
+          <br />
+          이제 모빈 Wi-Fi와의 연결이 해제되면 알림이 옵니다!
+        </p>
+
         {wifiName && <p>현재 저장된 Wi-Fi: {wifiName}</p>}
         <button onClick={requestNotificationPermission}>
           🔔 알림 권한 요청
         </button>
         <button onClick={saveWifiName}>📶 현재 Wi-Fi 저장</button>
+        {isInstallable && (
+          <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
+        )}
       </header>
     </div>
   );
