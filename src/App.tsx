@@ -26,6 +26,17 @@ function App() {
       const ip = await fetchCurrentIP();
       const savedIP = localStorage.getItem("storedIP");
 
+      console.log("ip", ip);
+
+      if (!ip) {
+        setIsOnline(false);
+        sendNotification(
+          "❌ Wi-Fi 연결 끊김",
+          `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+        );
+        return;
+      }
+
       if (wifiName && savedIP) {
         if (ip !== savedIP) {
           if (isOnline) {
