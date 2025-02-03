@@ -39,11 +39,15 @@ function App() {
     if (wifiName && currentIP) {
       const storedIP = localStorage.getItem("wifiIP");
 
-      if (storedIP && storedIP !== currentIP) {
+      console.log("storedIP", storedIP);
+      console.log("currentIP", currentIP);
+      if (storedIP !== currentIP) {
         sendNotification(
           "❌ Wi-Fi 연결 끊김",
           `${wifiName}에서 연결이 끊겼습니다.`
         );
+
+        setIsOnline(false);
       }
     }
   }, [currentIP, wifiName]);
@@ -145,6 +149,7 @@ function App() {
         <h1>
           {isOnline ? "✅ 온라인 상태 : 출근" : "❌ 오프라인 상태 : 퇴근"}
         </h1>
+        {wifiName && <h3>현재 저장된 Wi-Fi: {wifiName}</h3>}
         <p>
           사용방법
           <br />
@@ -157,14 +162,11 @@ function App() {
           이제 모빈 Wi-Fi와의 연결이 해제되면 알림이 옵니다!
         </p>
 
-        {wifiName && <p>현재 저장된 Wi-Fi: {wifiName}</p>}
         <button onClick={requestNotificationPermission}>
           🔔 알림 권한 요청
         </button>
         <button onClick={saveWifiName}>📶 현재 Wi-Fi 저장</button>
-        {isInstallable && (
-          <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
-        )}
+        <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
       </header>
     </div>
   );
