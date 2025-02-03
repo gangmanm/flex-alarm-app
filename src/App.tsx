@@ -6,10 +6,6 @@ function App() {
   const [wifiName, setWifiName] = useState<string | null>(
     localStorage.getItem("wifiName")
   );
-  const [storedIP, setStoredIP] = useState<string | null>(
-    localStorage.getItem("storedIP")
-  );
-  const [currentIP, setCurrentIP] = useState<string>("");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
 
@@ -18,7 +14,6 @@ function App() {
     try {
       const response = await fetch("https://api64.ipify.org?format=json");
       const data = await response.json();
-      setCurrentIP(data.ip);
       return data.ip;
     } catch (error) {
       console.log("IP 주소를 가져오는 중 오류 발생:", error);
@@ -136,7 +131,6 @@ function App() {
     const ip = await fetchCurrentIP();
     if (enteredWifiName && ip) {
       setWifiName(enteredWifiName);
-      setStoredIP(ip);
       localStorage.setItem("wifiName", enteredWifiName);
       localStorage.setItem("storedIP", ip);
 
