@@ -57,8 +57,12 @@ function App() {
   };
 
   const sendNotification = (title: string, body: string) => {
-    if (Notification.permission === "granted") {
-      new Notification(title, { body });
+    if (Notification.permission === "granted" && navigator.serviceWorker) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification(title, { body });
+      });
+    } else {
+      console.warn("알림 권한이 없거나 Service Worker가 준비되지 않았습니다.");
     }
   };
 
