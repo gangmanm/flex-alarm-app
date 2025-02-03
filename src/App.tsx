@@ -1,29 +1,60 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import { connection } from "next/server";
 
 function App() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(false);
   const [wifiName, setWifiName] = useState<string | null>(
     localStorage.getItem("wifiName")
   );
+  const [storedIP, setStoredIP] = useState<string | null>(
+    localStorage.getItem("storedIP")
+  );
   const [currentIP, setCurrentIP] = useState<string>("");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
 
+  // 현재 IP 주소 가져오기
   const fetchCurrentIP = async () => {
     try {
       const response = await fetch("https://api64.ipify.org?format=json");
       const data = await response.json();
       setCurrentIP(data.ip);
+      return data.ip;
     } catch (error) {
-      console.error("IP 주소를 가져오는 중 오류 발생:", error);
+      console.log("IP 주소를 가져오는 중 오류 발생:", error);
+      return null;
     }
   };
-  useEffect(() => {
-    fetchCurrentIP(); // 초기 IP 확인
 
-    const handleNetworkChange = () => {
-      fetchCurrentIP(); // 네트워크 변경 시 IP 확인
-    };
+  // 네트워크 변경 감지 및 처리
+  const handleNetworkChange = async () => {
+    const ip = await fetchCurrentIP();
+    const savedIP = localStorage.getItem("storedIP");
+
+    if (wifiName && savedIP) {
+      if (ip !== savedIP) {
+        if (isOnline) {
+          setIsOnline(false);
+          sendNotification(
+            "❌ Wi-Fi 연결 끊김",
+            `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+          );
+        }
+      } else {
+        if (!isOnline) {
+          setIsOnline(true);
+          sendNotification(
+            "✅ Wi-Fi 연결 됨",
+            `${wifiName}과 연결되었습니다. Flex에서 출근을 눌러주세요`
+          );
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    handleNetworkChange();
 
     window.addEventListener("online", handleNetworkChange);
     window.addEventListener("offline", handleNetworkChange);
@@ -32,45 +63,29 @@ function App() {
       window.removeEventListener("online", handleNetworkChange);
       window.removeEventListener("offline", handleNetworkChange);
     };
-  }, []);
+  }, [currentIP, handleNetworkChange]);
 
-  useEffect(() => {
-    const storedIP = localStorage.getItem("storedIP");
-
-    if (wifiName && currentIP) {
-      console.log("Stored IP:", storedIP);
-      console.log("Current IP:", currentIP);
-
-      if (storedIP !== currentIP) {
-        setIsOnline(false);
-        sendNotification(
-          "❌ Wi-Fi 연결 끊김",
-          `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
-        );
-      } else {
-        setIsOnline(true);
-        sendNotification(
-          "✅ Wi-Fi 연결 됨",
-          `${wifiName}과 연결되었습니다. Flex에서 출근을 눌러주세요`
-        );
-      }
-    }
-  }, [currentIP, wifiName]);
-
-  // PWA 설치 가능 여부 감지
+  // PWA 설치 유도
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event);
     };
 
+    const handleAppInstalled = () => {
+      console.log("✅ PWA 설치 완료");
+      setIsInstalled(true);
+    };
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt
       );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -79,7 +94,8 @@ function App() {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === "accepted") {
-          console.log("✅ PWA 설치 완료");
+          console.log("✅ PWA 설치 성공");
+          setIsInstalled(true);
         } else {
           console.log("❌ PWA 설치 취소");
         }
@@ -87,33 +103,6 @@ function App() {
       });
     }
   };
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      sendNotification(
-        "출근 하셨나요? Flex에서 출근을 눌러주세요",
-        `${wifiName || "알 수 없음"}에 연결되었습니다.`
-      );
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      const storedWifiName = localStorage.getItem("wifiName") || "알 수 없음";
-      sendNotification(
-        "퇴근 하셨나요? Flex에서 퇴근을 눌러주세요",
-        `${storedWifiName}에서 연결이 끊겼습니다.`
-      );
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [wifiName]);
 
   const requestNotificationPermission = () => {
     if (Notification.permission !== "granted") {
@@ -125,12 +114,14 @@ function App() {
     }
   };
 
-  const saveWifiName = () => {
+  const saveWifiName = async () => {
     const enteredWifiName = prompt("현재 연결된 Wi-Fi 이름을 입력하세요:");
-    if (enteredWifiName) {
+    const ip = await fetchCurrentIP();
+    if (enteredWifiName && ip) {
       setWifiName(enteredWifiName);
+      setStoredIP(ip);
       localStorage.setItem("wifiName", enteredWifiName);
-      localStorage.setItem("storedIP", currentIP);
+      localStorage.setItem("storedIP", ip);
 
       sendNotification(
         "✅ Wi-Fi 저장됨",
@@ -172,7 +163,10 @@ function App() {
           🔔 알림 권한 요청
         </button>
         <button onClick={saveWifiName}>📶 현재 Wi-Fi 저장</button>
-        <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
+
+        {!isInstalled && (
+          <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
+        )}
       </header>
     </div>
   );
