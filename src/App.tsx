@@ -43,18 +43,16 @@ function App() {
 
       if (!ip) {
         setIsOnline(false);
-        if (!hasNotified && !notificationSent) {
-          sendNotification(
-            "❌ Wi-Fi 연결 끊김",
-            `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
-          );
-          setHasNotified(true);
-          setNotificationSent(true);
-        }
+        sendNotification(
+          "❌ Wi-Fi 연결 끊김",
+          `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+        );
+        setHasNotified(true);
+        setNotificationSent(true);
         return;
       }
 
-      if (ip !== savedIP && !hasNotified && !notificationSent) {
+      if (ip !== savedIP) {
         setIsOnline(false);
         sendNotification(
           "❌ Wi-Fi 연결 끊김",
