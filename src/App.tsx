@@ -4,11 +4,13 @@ import "./App.css";
 function App() {
   const [isOnline, setIsOnline] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [currentIP, setCurrentIP] = useState("");
   // 현재 IP 주소 가져오기
   const fetchCurrentIP = async () => {
     try {
       const response = await fetch("https://api64.ipify.org?format=json");
       const data = await response.json();
+      setCurrentIP(data.ip);
       return data.ip;
     } catch (error) {
       console.log("IP 주소를 가져오는 중 오류 발생:", error);
@@ -128,6 +130,7 @@ function App() {
         <h1>
           {isOnline ? "✅ 온라인 상태 : 출근" : "❌ 오프라인 상태 : 퇴근"}
         </h1>
+        <h3>{"IP : " + currentIP}</h3>
         <p>
           사용방법
           <br />
