@@ -4,8 +4,6 @@ import "./App.css";
 function App() {
   const [isOnline, setIsOnline] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstalled, setIsInstalled] = useState<boolean>(false);
-
   // 현재 IP 주소 가져오기
   const fetchCurrentIP = async () => {
     try {
@@ -18,15 +16,6 @@ function App() {
     }
   };
 
-  // 주기적으로 IP 주소 확인
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchCurrentIP();
-    }, 30000); // 30초마다 IP 주소 확인 (시간은 필요에 맞게 조정)
-
-    return () => clearInterval(intervalId); // 컴포넌트가 언마운트될 때 인터벌 종료
-  }, []);
-
   // 네트워크 변경 감지 및 처리
   useEffect(() => {
     const handleNetworkChange = async () => {
@@ -37,7 +26,7 @@ function App() {
         setIsOnline(false);
         sendNotification(
           "❌ Wi-Fi 연결 끊김",
-          `$모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+          `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
         );
         return;
       }
@@ -83,7 +72,6 @@ function App() {
 
     const handleAppInstalled = () => {
       console.log("✅ PWA 설치 완료");
-      setIsInstalled(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -104,7 +92,6 @@ function App() {
       deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === "accepted") {
           console.log("✅ PWA 설치 성공");
-          setIsInstalled(true);
         } else {
           console.log("❌ PWA 설치 취소");
         }
@@ -118,6 +105,8 @@ function App() {
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
           alert("알림 권한이 허용되었습니다.");
+        } else {
+          console.warn("알림 권한이 거부되었습니다.");
         }
       });
     }
@@ -154,10 +143,7 @@ function App() {
         <button onClick={requestNotificationPermission}>
           🔔 알림 권한 요청
         </button>
-
-        {!isInstalled && (
-          <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
-        )}
+        <button onClick={handleInstallClick}>🏠 홈 화면에 추가하기</button>
       </header>
     </div>
   );
