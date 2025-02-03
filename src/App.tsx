@@ -8,8 +8,6 @@ function App() {
   );
   const [currentIP, setCurrentIP] = useState<string>("");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const storedIP = localStorage.getItem("wifiIP");
 
   const fetchCurrentIP = async () => {
     try {
@@ -61,14 +59,13 @@ function App() {
         }
       }
     }
-  }, [currentIP, wifiName]);
+  }, [currentIP, wifiName, isOnline]);
 
   // PWA 설치 가능 여부 감지
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event);
-      setIsInstallable(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -91,7 +88,6 @@ function App() {
           console.log("❌ PWA 설치 취소");
         }
         setDeferredPrompt(null);
-        setIsInstallable(false);
       });
     }
   };
