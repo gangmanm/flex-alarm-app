@@ -1,72 +1,102 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 function App() {
   const [isOnline, setIsOnline] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [currentIP, setCurrentIP] = useState("");
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [currentIP, setCurrentIP] = useState<string>("");
+  const [hasNotified, setHasNotified] = useState<boolean>(false);
+  const [prevIP, setPrevIP] = useState<string>("");
+
   // 현재 IP 주소 가져오기
-  const fetchCurrentIP = async () => {
-    try {
-      const response = await fetch("https://api64.ipify.org?format=json");
-      const data = await response.json();
-      setCurrentIP(data.ip);
-      return data.ip;
-    } catch (error) {
-      console.log("IP 주소를 가져오는 중 오류 발생:", error);
-      return null;
-    }
-  };
 
   // 네트워크 변경 감지 및 처리
   useEffect(() => {
     const handleNetworkChange = async () => {
       const ip = await fetchCurrentIP();
+      if (ip) {
+        setCurrentIP(ip);
+        setPrevIP(ip);
+      }
       const savedIP = "1.238.113.244"; // 저장된 IP
 
       if (!ip) {
+        setIsOnline(false);
+        if (!hasNotified) {
+          sendNotification(
+            "❌ Wi-Fi 연결 끊김",
+            `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+          );
+          setHasNotified(true);
+        }
+        return;
+      }
+
+      if (ip !== savedIP && !hasNotified) {
         setIsOnline(false);
         sendNotification(
           "❌ Wi-Fi 연결 끊김",
           `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
         );
-        return;
-      }
-
-      if (savedIP) {
-        if (ip !== savedIP) {
-          setIsOnline(false);
-          sendNotification(
-            "❌ Wi-Fi 연결 끊김",
-            `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
-          );
-        } else {
-          setIsOnline(true);
-          sendNotification(
-            "✅ Wi-Fi 연결 됨",
-            `모빈과 연결되었습니다. Flex에서 출근을 눌러주세요`
-          );
-        }
+        setHasNotified(true);
+        restartServiceWorker();
+      } else if (ip === savedIP && !hasNotified) {
+        setIsOnline(true);
+        sendNotification(
+          "✅ Wi-Fi 연결 됨",
+          `모빈과 연결되었습니다. Flex에서 출근을 눌러주세요`
+        );
+        setHasNotified(true);
       }
     };
 
-    // 300ms마다 네트워크 상태를 확인
-    const intervalId = setInterval(() => {
-      handleNetworkChange();
-    }, 1000); // 300ms마다 호출
+    const fetchCurrentIP = async (): Promise<string | null> => {
+      try {
+        const response = await fetch("https://api64.ipify.org?format=json");
+        const data = await response.json();
+        if (prevIP !== data.ip) {
+          setHasNotified(false);
+        }
+        return data.ip;
+      } catch (error) {
+        console.log("IP 주소를 가져오는 중 오류 발생:", error);
+        return null;
+      }
+    };
+    const intervalId = setInterval(handleNetworkChange, 1000);
 
-    // 컴포넌트가 언마운트될 때 인터벌을 정리
     return () => clearInterval(intervalId);
-  }, [currentIP]);
+  }, [hasNotified, prevIP]);
+
+  // 서비스 워커 재시작
+  const restartServiceWorker = (): void => {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.getRegistration().then((registration) => {
+        if (registration) {
+          registration.unregister().then(() => {
+            navigator.serviceWorker.register("/service-worker.js").then(() => {
+              console.log("🔄 서비스 워커 재등록 완료");
+            });
+          });
+        }
+      });
+    }
+  };
 
   // PWA 설치 유도
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setDeferredPrompt(event);
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
     };
 
-    const handleAppInstalled = () => {
+    const handleAppInstalled = (): void => {
       console.log("✅ PWA 설치 완료");
     };
 
@@ -82,10 +112,10 @@ function App() {
     };
   }, []);
 
-  const handleInstallClick = () => {
+  const handleInstallClick = (): void => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult: any) => {
+      deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === "accepted") {
           console.log("✅ PWA 설치 성공");
         } else {
@@ -96,7 +126,7 @@ function App() {
     }
   };
 
-  const requestNotificationPermission = () => {
+  const requestNotificationPermission = (): void => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
@@ -108,7 +138,7 @@ function App() {
     }
   };
 
-  const sendNotification = (title: string, body: string) => {
+  const sendNotification = (title: string, body: string): void => {
     if (Notification.permission === "granted" && navigator.serviceWorker) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification(title, { body });

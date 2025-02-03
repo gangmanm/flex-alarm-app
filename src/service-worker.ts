@@ -86,3 +86,8 @@ self.addEventListener("notificationclick", (event) => {
       })
   );
 });
+
+self.addEventListener("fetch", (event) => {
+  // 네트워크 요청 가로채기 (옵션)
+  event.respondWith(fetch(event.request));
+});
