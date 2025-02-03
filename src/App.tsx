@@ -53,7 +53,7 @@ function App() {
     // 300ms마다 네트워크 상태를 확인
     const intervalId = setInterval(() => {
       handleNetworkChange();
-    }, 30000); // 300ms마다 호출
+    }, 1000); // 300ms마다 호출
 
     // 컴포넌트가 언마운트될 때 인터벌을 정리
     return () => clearInterval(intervalId);
