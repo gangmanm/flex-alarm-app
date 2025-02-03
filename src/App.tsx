@@ -158,7 +158,9 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>
-          {isOnline ? "✅ 온라인 상태 : 출근" : "❌ 오프라인 상태 : 퇴근"}
+          {isOnline
+            ? "✅ 온라인 상태 : 출근 ahfmrpTdj"
+            : "❌ 오프라인 상태 : 퇴근"}
         </h1>
         <h3>{"IP : " + currentIP}</h3>
         <p>
