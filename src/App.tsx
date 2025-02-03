@@ -22,7 +22,7 @@ function App() {
   useEffect(() => {
     const handleNetworkChange = async () => {
       const ip = await fetchCurrentIP();
-      const savedIP = "1.238.113.244";
+      const savedIP = "1.238.113.244"; // 저장된 IP
 
       if (!ip) {
         setIsOnline(false);
@@ -50,16 +50,14 @@ function App() {
       }
     };
 
-    handleNetworkChange(); // 초기 호출
+    // 300ms마다 네트워크 상태를 확인
+    const intervalId = setInterval(() => {
+      handleNetworkChange();
+    }, 30000); // 300ms마다 호출
 
-    window.addEventListener("online", handleNetworkChange);
-    window.addEventListener("offline", handleNetworkChange);
-
-    return () => {
-      window.removeEventListener("online", handleNetworkChange);
-      window.removeEventListener("offline", handleNetworkChange);
-    };
-  }, [isOnline]);
+    // 컴포넌트가 언마운트될 때 인터벌을 정리
+    return () => clearInterval(intervalId);
+  }, [currentIP]);
 
   // PWA 설치 유도
   useEffect(() => {
