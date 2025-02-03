@@ -13,8 +13,23 @@ function App() {
   const [currentIP, setCurrentIP] = useState<string>("");
   const [hasNotified, setHasNotified] = useState<boolean>(false);
   const [prevIP, setPrevIP] = useState<string>("");
+  const [notificationSent, setNotificationSent] = useState<boolean>(false);
 
   // 현재 IP 주소 가져오기
+  const fetchCurrentIP = async (): Promise<string | null> => {
+    try {
+      const response = await fetch("https://api64.ipify.org?format=json");
+      const data = await response.json();
+      if (prevIP !== data.ip) {
+        setHasNotified(false);
+        setNotificationSent(false);
+      }
+      return data.ip;
+    } catch (error) {
+      console.log("IP 주소를 가져오는 중 오류 발생:", error);
+      return null;
+    }
+  };
 
   // 네트워크 변경 감지 및 처리
   useEffect(() => {
@@ -28,51 +43,44 @@ function App() {
 
       if (!ip) {
         setIsOnline(false);
-        if (!hasNotified) {
+        if (!hasNotified && !notificationSent) {
           sendNotification(
             "❌ Wi-Fi 연결 끊김",
             `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
           );
           setHasNotified(true);
+          setNotificationSent(true);
         }
         return;
       }
 
-      if (ip !== savedIP && !hasNotified) {
+      if (ip !== savedIP && !hasNotified && !notificationSent) {
         setIsOnline(false);
         sendNotification(
           "❌ Wi-Fi 연결 끊김",
           `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
         );
         setHasNotified(true);
-        restartServiceWorker();
-      } else if (ip === savedIP && !hasNotified) {
+        setNotificationSent(true);
+      } else if (ip === savedIP && !hasNotified && !notificationSent) {
         setIsOnline(true);
         sendNotification(
           "✅ Wi-Fi 연결 됨",
           `모빈과 연결되었습니다. Flex에서 출근을 눌러주세요`
         );
         setHasNotified(true);
+        setNotificationSent(true);
       }
     };
 
-    const fetchCurrentIP = async (): Promise<string | null> => {
-      try {
-        const response = await fetch("https://api64.ipify.org?format=json");
-        const data = await response.json();
-        if (prevIP !== data.ip) {
-          setHasNotified(false);
-        }
-        return data.ip;
-      } catch (error) {
-        console.log("IP 주소를 가져오는 중 오류 발생:", error);
-        return null;
-      }
-    };
     const intervalId = setInterval(handleNetworkChange, 1000);
+    const serviceWorkerInterval = setInterval(restartServiceWorker, 10000); // 5분마다 서비스 워커 재시작
 
-    return () => clearInterval(intervalId);
-  }, [hasNotified, prevIP]);
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(serviceWorkerInterval);
+    };
+  }, [hasNotified, prevIP, notificationSent, fetchCurrentIP]);
 
   // 서비스 워커 재시작
   const restartServiceWorker = (): void => {
