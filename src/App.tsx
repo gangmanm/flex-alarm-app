@@ -41,25 +41,21 @@ function App() {
       console.log("Stored IP:", storedIP);
       console.log("Current IP:", currentIP);
 
-      if (storedIP && storedIP !== currentIP) {
-        if (isOnline) {
-          setIsOnline(false);
-          sendNotification(
-            "❌ Wi-Fi 연결 끊김",
-            `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
-          );
-        }
-      } else if (storedIP === currentIP) {
-        if (!isOnline) {
-          setIsOnline(true);
-          sendNotification(
-            "✅ Wi-Fi 연결 됨",
-            `${wifiName}과 연결되었습니다. Flex에서 출근을 눌러주세요`
-          );
-        }
+      if (storedIP !== currentIP) {
+        setIsOnline(false);
+        sendNotification(
+          "❌ Wi-Fi 연결 끊김",
+          `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+        );
+      } else {
+        setIsOnline(true);
+        sendNotification(
+          "✅ Wi-Fi 연결 됨",
+          `${wifiName}과 연결되었습니다. Flex에서 출근을 눌러주세요`
+        );
       }
     }
-  }, [currentIP, wifiName, isOnline]);
+  }, [currentIP, wifiName]);
 
   // PWA 설치 가능 여부 감지
   useEffect(() => {
