@@ -35,21 +35,17 @@ function App() {
 
       if (savedIP) {
         if (ip !== savedIP) {
-          if (isOnline) {
-            setIsOnline(false);
-            sendNotification(
-              "❌ Wi-Fi 연결 끊김",
-              `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
-            );
-          }
+          setIsOnline(false);
+          sendNotification(
+            "❌ Wi-Fi 연결 끊김",
+            `모빈에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+          );
         } else {
-          if (!isOnline) {
-            setIsOnline(true);
-            sendNotification(
-              "✅ Wi-Fi 연결 됨",
-              `모빈과 연결되었습니다. Flex에서 출근을 눌러주세요`
-            );
-          }
+          setIsOnline(true);
+          sendNotification(
+            "✅ Wi-Fi 연결 됨",
+            `모빈과 연결되었습니다. Flex에서 출근을 눌러주세요`
+          );
         }
       }
     };
