@@ -9,6 +9,7 @@ function App() {
   const [currentIP, setCurrentIP] = useState<string>("");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const storedIP = localStorage.getItem("wifiIP");
 
   const fetchCurrentIP = async () => {
     try {
@@ -36,21 +37,32 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const storedIP = localStorage.getItem("storedIP");
+
     if (wifiName && currentIP) {
-      const storedIP = localStorage.getItem("wifiIP");
+      console.log("Stored IP:", storedIP);
+      console.log("Current IP:", currentIP);
 
-      console.log("storedIP", storedIP);
-      console.log("currentIP", currentIP);
-      if (storedIP !== currentIP) {
-        sendNotification(
-          "❌ Wi-Fi 연결 끊김",
-          `${wifiName}에서 연결이 끊겼습니다.`
-        );
-
-        setIsOnline(false);
+      if (storedIP && storedIP !== currentIP) {
+        if (isOnline) {
+          setIsOnline(false);
+          sendNotification(
+            "❌ Wi-Fi 연결 끊김",
+            `${wifiName}에서 연결이 끊겼습니다. Flex에서 퇴근을 눌러주세요`
+          );
+        }
+      } else if (storedIP === currentIP) {
+        if (!isOnline) {
+          setIsOnline(true);
+          sendNotification(
+            "✅ Wi-Fi 연결 됨",
+            `${wifiName}과 연결되었습니다. Flex에서 출근을 눌러주세요`
+          );
+        }
       }
     }
   }, [currentIP, wifiName]);
+
   // PWA 설치 가능 여부 감지
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -126,6 +138,8 @@ function App() {
     if (enteredWifiName) {
       setWifiName(enteredWifiName);
       localStorage.setItem("wifiName", enteredWifiName);
+      localStorage.setItem("storedIP", currentIP);
+
       sendNotification(
         "✅ Wi-Fi 저장됨",
         `${enteredWifiName}이 저장되었습니다.`
